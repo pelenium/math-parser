@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="src/Lexer.fs" />
     <Compile Include="src/Program.fs" />
   </ItemGroup>
 
