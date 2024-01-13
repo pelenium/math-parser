@@ -62,9 +62,9 @@ module StackMachine =
 
 module private OperationStack =
     type OperationStack() =
-        let mutable Stack: int list = []
+        let mutable Stack: string list = []
 
-        member _.PUSH(n: int) = Stack <- Stack @ [ n ]
+        member _.PUSH(n: string) = Stack <- Stack @ [ n ]
 
         member _.POP() =
             let head = Stack.Head
@@ -106,6 +106,9 @@ module Tokenizer =
             code
 
 module Parser =
+    open Tokenizer
+    open System.Text.RegularExpressions
+
     let split (code: string) =
         code
             .Replace("(", " ( ")
@@ -114,17 +117,26 @@ module Parser =
         |> Array.map (fun s -> s.Trim())
         |> Array.toList
 
-    let parse (code: string) (vm: StackMachine.StackMachine) =
+    let parse (code: string) =
         let os = OperationStack.OperationStack()
-        let tokens = code |> split |> Tokenizer.Tokenize
+        let tokens = code |> split |> Tokenize
 
         for token in tokens do
             printfn $"{token}"
 
             match token with
+            | (Plus, _) -> os.PUSH "+"
+            | (Minus, _) -> os.PUSH "-"
+            | (LPar, _) -> ()
             | _ -> ()
 
         ()
+
+    let checkNum (code: string) =
+        let a = Regex.Matches(code, Regex.Escape "(").Count
+        let b = Regex.Matches(code, Regex.Escape ")").Count
+
+        a = b
 
     let checkForCorrectBrackets (code: string) =
         let mutable i = 0
@@ -145,9 +157,9 @@ module Parser =
 
                     i <- i + 1
 
-                printfn $"{bracketCounter}"
+                let flag = checkNum code
 
-                if bracketCounter <> 0 then
+                if bracketCounter <> 0 || not flag then
                     raise (Err "Error: Incorrect brackets")
             else
                 i <- i + 1

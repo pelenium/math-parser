@@ -12,9 +12,8 @@ let main _ =
     printfn $"{expression}"
 
     try
-        let vm = StackMachine.StackMachine()
         Parser.checkForCorrectBrackets expression
-        Parser.parse expression vm
+        Parser.parse expression
     with
     | Err(e) -> 
         printfn $"{e}"
