@@ -9,51 +9,147 @@ type Token =
     | Plus
     | Minus
 
-type StackMachine() =
-    let mutable Stack: int list = []
+module StackMachine =
 
-    member _.PUSH(n: int) = Stack <- Stack @ [ n ]
+    type StackMachine() =
+        let mutable Stack: int list = []
 
-    member _.POP() =
-        let head = Stack.Head
-        Stack <- Stack.Tail
+        member _.PUSH(n: int) = Stack <- Stack @ [ n ]
 
-        head
+        member _.POP() =
+            let head = Stack.Head
+            Stack <- Stack.Tail
 
-    member this.ADD() =
-        if Stack.Length < 2 then
-            failwith "Incorrect opcode"
+            head
 
-        Stack <- (this.POP() + this.POP()) :: Stack
+        member this.ADD() =
+            if Stack.Length < 2 then
+                failwith "Incorrect opcode"
 
-    member this.SUB() =
-        if Stack.Length < 2 then
-            raise (Err "Error: Incorrect opcode")
+            Stack <- (this.POP() + this.POP()) :: Stack
 
-        Stack <- (this.POP() - this.POP()) :: Stack
+        member this.SUB() =
+            if Stack.Length < 2 then
+                raise (Err "Error: Incorrect opcode")
 
-    member this.MUL() =
-        if Stack.Length < 2 then
-            raise (Err "Error: Incorrect opcode")
+            Stack <- (this.POP() - this.POP()) :: Stack
 
-        Stack <- (this.POP() * this.POP()) :: Stack
+        member this.MUL() =
+            if Stack.Length < 2 then
+                raise (Err "Error: Incorrect opcode")
 
-    member this.DIV() =
-        // this.Print()
+            Stack <- (this.POP() * this.POP()) :: Stack
 
-        if Stack.Length < 2 then
-            raise (Err "Error: Incorrect opcode")
+        member this.DIV() =
+            // this.Print()
 
-        let fst = this.POP()
-        let scnd = this.POP()
+            if Stack.Length < 2 then
+                raise (Err "Error: Incorrect opcode")
 
-        if scnd = 0 then
-            raise (Err "Error: Division by zero")
+            let fst = this.POP()
+            let scnd = this.POP()
 
-        Stack <- (fst / scnd) :: Stack
+            if scnd = 0 then
+                raise (Err "Error: Division by zero")
 
-    member _.Print() =
-        for i in Stack do
-            printf $"{i} "
+            Stack <- (fst / scnd) :: Stack
 
-        printfn ""
+        member _.Print() =
+            for i in Stack do
+                printf $"{i} "
+
+            printfn ""
+
+module private OperationStack =
+    type OperationStack() =
+        let mutable Stack: int list = []
+
+        member _.PUSH(n: int) = Stack <- Stack @ [ n ]
+
+        member _.POP() =
+            let head = Stack.Head
+            Stack <- Stack.Tail
+
+            head
+
+module Tokenizer =
+    type Token =
+        | LPar
+        | RPar
+        | Number
+        | Plus
+        | Minus
+        | Identidier
+
+    let private ToInt (token: string) =
+        let mutable result = 0
+
+        match System.Int32.TryParse(token, &result) with
+        | true -> Some(result)
+        | _ -> None
+
+    let (|INT|NONE|) (token: string) =
+        match ToInt token with
+        | Some _ -> INT
+        | None -> NONE
+
+    let Tokenize (code: string list) =
+        List.map
+            (fun l ->
+                match l with
+                | "(" -> (LPar, l)
+                | ")" -> (RPar, l)
+                | "+" -> (Plus, l)
+                | "-" -> (Minus, l)
+                | INT _ -> (Number, l)
+                | _ -> (Identidier, l))
+            code
+
+module Parser =
+    let split (code: string) =
+        code
+            .Replace("(", " ( ")
+            .Replace(")", " ) ")
+            .Split([| ' ' |], System.StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map (fun s -> s.Trim())
+        |> Array.toList
+
+    let parse (code: string) (vm: StackMachine.StackMachine) =
+        let os = OperationStack.OperationStack()
+        let tokens = code |> split |> Tokenizer.Tokenize
+
+        for token in tokens do
+            printfn $"{token}"
+
+            match token with
+            | _ -> ()
+
+        ()
+
+    let checkForCorrectBrackets (code: string) =
+        let mutable i = 0
+
+        while i < code.Length do
+
+            if code[i] = '(' then
+                let mutable bracketCounter = 1
+
+                i <- i + 1
+
+                while bracketCounter > 0 && i < code.Length do
+                    if code[i] = '(' then
+                        bracketCounter <- bracketCounter + 1
+
+                    if code[i] = ')' then
+                        bracketCounter <- bracketCounter - 1
+
+                    i <- i + 1
+
+                printfn $"{bracketCounter}"
+
+                if bracketCounter <> 0 then
+                    raise (Err "Error: Incorrect brackets")
+            else
+                i <- i + 1
+
+        ()
