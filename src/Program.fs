@@ -1,5 +1,5 @@
-﻿open Lexer
-open System
+﻿open System
+
 
 let getData path =
     (String.concat "\n" (IO.File.ReadLines(path) |> Seq.toList))
@@ -13,12 +13,16 @@ let getData path =
 let main _ =
     let code = getData "./example.lisp"
 
-    for i in code do
-        printf $"{i} "
-
-    let tokens = Tokenizer.Tokenize code
-
-    for i in tokens do
-        printfn $"{i}"
+    let vm = Lexer.StackMachine()
+    try
+        vm.PUSH 1
+        vm.PUSH 3
+        vm.ADD()
+        // 4
+        vm.PUSH 0
+        vm.DIV()
+        vm.Print()
+    with
+    | Lexer.Err(e) -> printfn $"{e}"
 
     0
