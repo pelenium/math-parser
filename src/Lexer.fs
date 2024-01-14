@@ -8,37 +8,53 @@ type Token =
     | Number
     | Plus
     | Minus
+    | Multiply
+    | Divide
 
 module StackMachine =
 
     type StackMachine() =
         let mutable Stack: int list = []
 
+        member this.Len() = Stack.Length
+
         member _.PUSH(n: int) = Stack <- Stack @ [ n ]
 
         member _.POP() =
-            let head = Stack.Head
-            Stack <- Stack.Tail
+            let head = Stack[Stack.Length - 1]
+            Stack <- Stack.GetSlice(Some 0, Some(Stack.Length - 2))
 
             head
 
         member this.ADD() =
+            // this.Print()
+
             if Stack.Length < 2 then
-                failwith "Incorrect opcode"
+                raise (Err "Error: Incorrect opcode")
 
             Stack <- (this.POP() + this.POP()) :: Stack
 
         member this.SUB() =
+            // this.Print()
+
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
 
-            Stack <- (this.POP() - this.POP()) :: Stack
+            let fst = this.POP()
+            let snd = this.POP()
+
+            Stack <- (snd - fst) :: Stack
 
         member this.MUL() =
+            // this.Print()
+
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
 
-            Stack <- (this.POP() * this.POP()) :: Stack
+            let fst = this.POP()
+            let snd = this.POP()
+
+            Stack <- (fst * snd) :: Stack
 
         member this.DIV() =
             // this.Print()
@@ -46,17 +62,17 @@ module StackMachine =
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
 
+            let snd = this.POP()
             let fst = this.POP()
-            let scnd = this.POP()
 
-            if scnd = 0 then
+            if snd = 0 then
                 raise (Err "Error: Division by zero")
 
-            Stack <- (fst / scnd) :: Stack
+            Stack <- (fst / snd) :: Stack
 
         member _.Print() =
             for i in Stack do
-                printf $"{i} "
+                printfn $"{i}"
 
             printfn ""
 
@@ -64,11 +80,11 @@ module private OperationStack =
     type OperationStack() =
         let mutable Stack: string list = []
 
-        member _.PUSH(n: string) = Stack <- Stack @ [ n ]
+        member _.PUSH(op: string) = Stack <- Stack @ [ op ]
 
-        member _.POP() =
-            let head = Stack.Head
-            Stack <- Stack.Tail
+        member _.POP() : string =
+            let head = Stack[Stack.Length - 1]
+            Stack <- Stack.GetSlice(Some 0, Some(Stack.Length - 2))
 
             head
 
@@ -79,9 +95,11 @@ module Tokenizer =
         | Number
         | Plus
         | Minus
+        | Multiply
+        | Divide
         | Identidier
 
-    let private ToInt (token: string) =
+    let internal ToInt (token: string) =
         let mutable result = 0
 
         match System.Int32.TryParse(token, &result) with
@@ -101,6 +119,8 @@ module Tokenizer =
                 | ")" -> (RPar, l)
                 | "+" -> (Plus, l)
                 | "-" -> (Minus, l)
+                | "*" -> (Multiply, l)
+                | "/" -> (Divide, l)
                 | INT _ -> (Number, l)
                 | _ -> (Identidier, l))
             code
@@ -117,20 +137,41 @@ module Parser =
         |> Array.map (fun s -> s.Trim())
         |> Array.toList
 
-    let parse (code: string) =
+    let ToInt (token: string) =
+        let mutable result = 0
+
+        let _ = System.Int32.TryParse(token, &result)
+        result
+
+    let parse (code: string) : int =
         let os = OperationStack.OperationStack()
+        let sm = StackMachine.StackMachine()
         let tokens = code |> split |> Tokenize
 
         for token in tokens do
-            printfn $"{token}"
+            // printfn $"{token}"
 
             match token with
             | (Plus, _) -> os.PUSH "+"
             | (Minus, _) -> os.PUSH "-"
-            | (LPar, _) -> ()
+            | (Multiply, _) -> os.PUSH "*"
+            | (Divide, _) -> os.PUSH "/"
+            | (Number, num) -> ToInt num |> sm.PUSH
+            | (RPar, _) ->
+                match os.POP() with
+                | "+" -> sm.ADD()
+                | "-" -> sm.SUB()
+                | "*" -> sm.MUL()
+                | "/" -> sm.DIV()
+                | _ -> ()
             | _ -> ()
 
-        ()
+        let res = sm.POP()
+
+        if sm.Len() = 0 then
+            res
+        else
+            raise (Err "Error: Incorrect number sequence")
 
     let checkNum (code: string) =
         let a = Regex.Matches(code, Regex.Escape "(").Count

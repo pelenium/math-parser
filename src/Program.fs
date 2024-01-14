@@ -7,13 +7,14 @@ let getData path =
 
 [<EntryPoint>]
 let main _ =
-    let expression = getData "./example.lisp"
+    let expression = getData "./example"
 
     printfn $"{expression}"
 
     try
         Parser.checkForCorrectBrackets expression
-        Parser.parse expression
+        let res = Parser.parse expression
+        printfn $"Result: {res}"
     with
     | Err(e) -> 
         printfn $"{e}"
