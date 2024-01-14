@@ -27,15 +27,15 @@ module StackMachine =
             head
 
         member this.ADD() =
-            // this.Print()
+            this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
 
-            Stack <- (this.POP() + this.POP()) :: Stack
+            this.PUSH(this.POP() + this.POP())
 
         member this.SUB() =
-            // this.Print()
+            this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
@@ -43,10 +43,10 @@ module StackMachine =
             let fst = this.POP()
             let snd = this.POP()
 
-            Stack <- (snd - fst) :: Stack
+            this.PUSH(snd - fst)
 
         member this.MUL() =
-            // this.Print()
+            this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
@@ -54,10 +54,10 @@ module StackMachine =
             let fst = this.POP()
             let snd = this.POP()
 
-            Stack <- (fst * snd) :: Stack
+            this.PUSH(fst * snd)
 
         member this.DIV() =
-            // this.Print()
+            this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
@@ -68,7 +68,7 @@ module StackMachine =
             if snd = 0 then
                 raise (Err "Error: Division by zero")
 
-            Stack <- (fst / snd) :: Stack
+            this.PUSH(fst / snd) 
 
         member _.Print() =
             for i in Stack do
