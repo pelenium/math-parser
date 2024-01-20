@@ -16,7 +16,7 @@ module StackMachine =
     type StackMachine() =
         let mutable Stack: int list = []
 
-        member this.Len() = Stack.Length
+        member _.Len() = Stack.Length
 
         member _.PUSH(n: int) = Stack <- Stack @ [ n ]
 
@@ -27,7 +27,7 @@ module StackMachine =
             head
 
         member this.ADD() =
-            this.Print()
+            // this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
@@ -35,7 +35,7 @@ module StackMachine =
             this.PUSH(this.POP() + this.POP())
 
         member this.SUB() =
-            this.Print()
+            // this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
@@ -46,7 +46,7 @@ module StackMachine =
             this.PUSH(snd - fst)
 
         member this.MUL() =
-            this.Print()
+            // this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")
@@ -57,7 +57,7 @@ module StackMachine =
             this.PUSH(fst * snd)
 
         member this.DIV() =
-            this.Print()
+            // this.Print()
 
             if Stack.Length < 2 then
                 raise (Err "Error: Incorrect opcode")

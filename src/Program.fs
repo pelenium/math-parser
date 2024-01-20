@@ -1,22 +1,25 @@
 ﻿open System
 open Lexer
 
-let getData path =
-    (String.concat "\n" (IO.File.ReadLines(path) |> Seq.toList))
-    
+let getData path = IO.File.ReadLines(path) |> Seq.toList
+
+let splitStr (s: string) = String.concat "\n" (s.Split "\n")
 
 [<EntryPoint>]
 let main _ =
-    let expression = getData "./example"
+    let expressions = getData "./example"
 
-    printfn $"{expression}"
+    for e in expressions do
+        printfn $"{e}"
+
+    printfn ""
 
     try
-        Parser.checkForCorrectBrackets expression
-        let res = Parser.parse expression
-        printfn $"Result: {res}"
-    with
-    | Err(e) -> 
+        for e in expressions do
+            e |> splitStr |> Parser.checkForCorrectBrackets
+            let res = Parser.parse e
+            printfn $"Result: {res}\n"
+    with Err(e) ->
         printfn $"{e}"
 
     0
