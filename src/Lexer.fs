@@ -2,23 +2,14 @@ namespace Lexer
 
 exception Err of string
 
-type Token =
-    | LPar
-    | RPar
-    | Number
-    | Plus
-    | Minus
-    | Multiply
-    | Divide
-
 module StackMachine =
 
     type StackMachine() =
-        let mutable Stack: int list = []
+        let mutable Stack: float list = []
 
         member _.Len() = Stack.Length
 
-        member _.PUSH(n: int) = Stack <- Stack @ [ n ]
+        member _.PUSH(n: float) = Stack <- Stack @ [ n ]
 
         member _.POP() =
             let head = Stack[Stack.Length - 1]
@@ -68,7 +59,34 @@ module StackMachine =
             if snd = 0 then
                 raise (Err "Error: Division by zero")
 
-            this.PUSH(fst / snd) 
+            this.PUSH(fst / snd)
+
+        member this.SIN() =
+            // this.Print()
+
+            this.POP() * System.Math.PI / 180.0 |> System.Math.Sin |> this.PUSH
+
+        member this.COS() =
+            // this.Print()
+
+            this.POP() * System.Math.PI / 180.0 |> System.Math.Cos |> this.PUSH
+
+        member this.SQ() =
+            // this.Print()
+
+            let n = this.POP()
+            n * n |> this.PUSH
+
+        member this.SQRT() =
+            // this.Print()
+
+            let n = this.POP()
+
+            if n >= 0 then
+                n |> System.Math.Sqrt |> this.PUSH
+
+            else
+                raise (Err "Error: Can't get square root of a negative number")
 
         member _.Print() =
             for i in Stack do
@@ -88,6 +106,12 @@ module private OperationStack =
 
             head
 
+        member _.Print() =
+            for i in Stack do
+                printfn $"{i}"
+
+            printfn ""
+
 module Tokenizer =
     type Token =
         | LPar
@@ -97,18 +121,20 @@ module Tokenizer =
         | Minus
         | Multiply
         | Divide
+        | Sin
+        | Cos
+        | Sq
+        | Sqrt
         | Identidier
 
-    let internal ToInt (token: string) =
-        let mutable result = 0
-
-        match System.Int32.TryParse(token, &result) with
-        | true -> Some(result)
+    let internal ToFloat (token: string) =
+        match System.Double.TryParse(token) with
+        | true, n -> Some(n)
         | _ -> None
 
-    let (|INT|NONE|) (token: string) =
-        match ToInt token with
-        | Some _ -> INT
+    let (|FLOAT|NONE|) (token: string) =
+        match ToFloat token with
+        | Some _ -> FLOAT
         | None -> NONE
 
     let Tokenize (code: string list) =
@@ -121,7 +147,11 @@ module Tokenizer =
                 | "-" -> (Minus, l)
                 | "*" -> (Multiply, l)
                 | "/" -> (Divide, l)
-                | INT _ -> (Number, l)
+                | "sin" -> (Sin, l)
+                | "cos" -> (Cos, l)
+                | "sq" -> (Sq, l)
+                | "sqrt" -> (Sqrt, l)
+                | FLOAT _ -> (Number, l)
                 | _ -> (Identidier, l))
             code
 
@@ -143,12 +173,13 @@ module Parser =
         let _ = System.Int32.TryParse(token, &result)
         result
 
-    let parse (code: string) : int =
+    let parse (code: string) : float =
         let os = OperationStack.OperationStack()
         let sm = StackMachine.StackMachine()
         let tokens = code |> split |> Tokenize
 
         for token in tokens do
+            // os.Print()
             // printfn $"{token}"
 
             match token with
@@ -156,6 +187,10 @@ module Parser =
             | (Minus, _) -> os.PUSH "-"
             | (Multiply, _) -> os.PUSH "*"
             | (Divide, _) -> os.PUSH "/"
+            | (Sin, _) -> os.PUSH "sin"
+            | (Cos, _) -> os.PUSH "cos"
+            | (Sq, _) -> os.PUSH "sq"
+            | (Sqrt, _) -> os.PUSH "sqrt"
             | (Number, num) -> ToInt num |> sm.PUSH
             | (RPar, _) ->
                 match os.POP() with
@@ -163,6 +198,10 @@ module Parser =
                 | "-" -> sm.SUB()
                 | "*" -> sm.MUL()
                 | "/" -> sm.DIV()
+                | "sin" -> sm.SIN()
+                | "cos" -> sm.COS()
+                | "sq" -> sm.SQ()
+                | "sqrt" -> sm.SQRT()
                 | _ -> ()
             | _ -> ()
 
